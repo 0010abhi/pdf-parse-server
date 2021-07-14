@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "warm-abacus-319311",
+  "private_key_id": "0dbe727044df098f5292cf2cec95faca85ecd60d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDXQ0sYu3J0GOLr\noVEs3eyFpcz2Q8aCv8mzneKSw8dzA5KaQlVkEITidht6G1IDrzZIFbcQvJU8QcFZ\nuK4oY70zOSfAFmc5zwNCqZ9CvvCPqPM3Bm8e8pFlntFOgXHGvc1/p8TA6y2CcAlU\nDCMSnT75b+xpEccqU2tYG9XoduZQTBbZe4svCxk2ZYhdBOeaDhFGCOH+2ge1g3Dr\n7Yg9SxD94Fi6DEUBDBupS0bhlJGO4Xv3+nJZeRmoWEn330MRw1ll20ixZsYc/ecy\nYOmH/3pKP75JAN0iJfIo0vfKeZkdp4ObuNrhO6K/JrwXf7ZzX63jDYipgNzk0Og0\nwRGNanGZAgMBAAECggEAAX14GJy7kcLWV0vk6aBDpzfa77LPvfn2kHq9pccbK1hR\nUdC3EfFB/5CnvLRRtgV8JQruxdE4YJQSnZIMtT+I1hZFiIE0h7mUy90BZY84JRZw\npecyf7lYI6byIKP+wKHHDroqP4JL7K+P26LAihFyl9FxhoIBVJwCjeKWHCeD4qG7\nn2uME+n+d1JxJ9Pi5hLGpcyN4aDuArmWcbn3kKB/RDsorThjBzOGDZ+BuWP1x2qk\ngs1L1WiAKb7U5ifiHL/UMozXYPIcX/K4gVzefc9ToOkRSmdYmSMeSXRg1JLoE0Et\nWXEaLa9I6rCHOzT9E/IOyS16gof0d2560560YQTssQKBgQD0RIE0KotnWMoeLfu2\ndd/poXiPnJwmHTsBRew3YC21FpiIwoLgvP7kiCBj4JLzNptdMrCuvA9hzB5b6S93\ndIdUJYx1gljxsvCiuj5gRNtqf4/wQofLDA4hnmYMU660nP1q/vOx5B5doyK0EmwN\nNR9+eiflaikWTgP5h6nCdQf/1QKBgQDhmiYS2rNlIcADJHqUqtprySD17MmnGnwR\nPBAC2DBqunYi5FCiYdX1lsnSIhn5vEqs6MJaEjh9mXRwyrfrnCOZEdN5NJvZpdAR\ncqgq1KR4/gVGhIPKhlvawDjYHficLrMpAPWG+CaGBHDLykQ3q3VhT4r2kae34zK8\nNbnTS5BQtQKBgHVulbsRlRFrQ0g9DR1MEAjO4xoPzZYZSWu0RPreVzsPEOf2s1r+\nIYCW3ROHPL6GiyzEGOL4cGCw9At10KcaM5FFuAAqWT5hq4RgC2rWz7Gkf/ue0I/S\nTNzmvOLCPGSCcObGiTwFkn+r1RxDGwVCe9CfQ5zsa7JYcVq+WOOuxdi9AoGAIWJQ\nNAYM+fAum8hwI0PNIpoWuI2boZC3v00mCWW4dHK3PJ6QmBbmNHtlziSht2T3n/Kp\nn+6GUX+9zVsSMFlgoywSISN51JFG4u4WmI/y7ryYR0Egx31uZkZ/out8eJAoju7H\nZnueJ8LMdjuuMJa8vfOpWqdfLEUAov1ITE4oQukCgYAhGDn97+5I7KP77VJcHf9h\nM5UG/YUVAJ8Ehzi31DSOyreXCnnlveKIUphzJNLdw9O49B+nqrVFpCUcrjlz1dNF\nUjNsngeCtnUaNwC+Kznd+qaOkkbvb4C6bysG+eai8kCM9DOL8Wpp4p7QMlIfBvaJ\nUkd7i6IRoI7f5lUPn07RRA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "pdf-parsing@warm-abacus-319311.iam.gserviceaccount.com",
+  "client_id": "108280651696707314102",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/pdf-parsing%40warm-abacus-319311.iam.gserviceaccount.com"
+}
