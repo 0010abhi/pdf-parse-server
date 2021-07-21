@@ -434,17 +434,6 @@ def parse_table2(
             end_index = segment.end_index
             response += document.text[start_index:end_index]
         return response
-    
-    def _get_vertex_text(el):
-        """Convert text offset indexes into text snippets."""
-        response = ""
-        # If a text segment spans several lines, it will
-        # be stored in different text segments.
-        for segment in el.text_anchor.text_segments:
-            start_index = segment.start_index
-            end_index = segment.end_index
-            response += document.text[start_index:end_index]
-        return response
 
     def _get_cell_data(el):
         response = []
@@ -452,13 +441,55 @@ def parse_table2(
             response.append(_get_text(cell.layout))
         return response
 
-    def _get_vertex_cell_data(el):
+    def _get_text_from_sorted_arr_tables(start_index, end_index):
+        """Convert text offset indexes into text snippets."""
         response = []
-        for cell in el:
-            response.append(_get_vertex_text(cell.layout))
+        # If a text segment spans several lines, it will
+        # be stored in different text segments.
+        response.append(document.text[start_index:end_index])
         return response
 
+    def _get_data_from_page_start_to_table_start(page_layout, table_layout):
+        #arr = []
+        arr_page = []
+        arr_tables = []
+        for segment in page_layout.text_anchor.text_segments:
+            start_index = segment.start_index
+            end_index = segment.end_index
+            if(start_index not in arr_page):
+                arr_page.append(start_index)
+            if(end_index not in arr_page):
+                arr_page.append(end_index)
+        print("Page arguments", arr_page)
+        for segment in table_layout.text_anchor.text_segments:
+            start_index = segment.start_index
+            end_index = segment.end_index
+            arr_tables.append([start_index, end_index])
+        sorted_arr_tables = sorted(arr_tables, key=lambda x: x[1])
+        #print("Table arguments", sorted_arr_tables)
+
+
+
+        resultant_arr = []
+        page_first_table = [arr_page[0], arr_tables[0][0]]
+        page_last_table = [arr_tables[len(arr_tables)-1][1], arr_page[1]]
+        resultant_arr.append(page_first_table)
+        for i in range(1, len(sorted_arr_tables)):
+            resultant_arr.append([sorted_arr_tables[i-1][1], sorted_arr_tables[i][0]])
+              # add start index of page
+        resultant_arr.append(page_last_table)
+        #print("resultant array is : ", resultant_arr)
+
+        #for i in resultant_arr:
+           #print("gettext_resultant",_get_text_from_sorted_arr_tables(i[0], i[1]))
+        
+        return resultant_arr
+    # take all lines above, between and below the table
+    # take{ page_start_index to 1st_table_s_i, 1st_table_end_ind to 2nd_table_start_ind, ..}
+
     data = []
+    arr_data = []
+    data_except_tables = []
     #print("document text", document.text)
     for page in document.pages:
         #print("Page number: {}".format(page.page_number)) 
@@ -467,11 +498,14 @@ def parse_table2(
         #print("page", page)
         #print("table*********", page.tables)
         if page.page_number==2:
-            lines = (_get_text(page.layout))
-            print(page.layout)
+            #lines = (_get_text(page.layout))
             temp = {"pageNumber":page.page_number, "data":[]}
+            #print("Page ", page.page_number, " : " , page.tables)
             for table_num, table in enumerate(page.tables):
+                arr_data = _get_data_from_page_start_to_table_start(page.layout,table.layout )
                 #print("Table {}: ".format(table))
+                #print("page", page.layout.text_anchor.text_segments)
+                #print("table", table.layout.text_anchor.text_segments)
                 temp2= {"tableNumber":table_num, "header":[], "body":[]}
                 
                 for row_num, row in enumerate(table.header_rows):
@@ -488,6 +522,8 @@ def parse_table2(
                     # print("Row {}: {}".format(row_num, cells))
                     # temp["body"].append({"rowNum":row_num, "cellData":_get_cell_data(cells)})
                 temp["data"].append(temp2)
+                for i in arr_data:
+                    data_except_tables.append(_get_text_from_sorted_arr_tables(i[0], i[1]))
             data.append(temp)
             # t = []
             # for entity in entities:
@@ -503,7 +539,7 @@ def parse_table2(
     
     #print(lines)
             
-    return jsonify({"data":data, "lines":lines})
+    return jsonify({"data":data, "dataExceptFromTable":data_except_tables, "dataExceptFromTableArray":arr_data, "pageStartEndIndex":[arr_data[0][0], arr_data[len(arr_data)-1][1]]})
 
 
 
