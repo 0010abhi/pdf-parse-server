@@ -517,6 +517,232 @@ def parser_type_one(
 """
 
 # 2nd parse table
+@app.route('/parser-type-two-extended', methods=['POST'])
+@cross_origin()
+def parser_type_two_extended(
+    project_id="warm-abacus-319311",
+    #input_uri="gs://pdf-parser-4fb89.appspot.com/report2.pdf",
+    input_uri = "",
+    
+):
+    """Parse a form"""
+    try:
+        client = documentai2.DocumentUnderstandingServiceClient()
+        input_uri = request.json["gcsUrl"]
+        if not input_uri or len(input_uri)==0:
+            return jsonify({"error":"Please provide gs url. "})
+        gcs_source = documentai2.types.GcsSource(uri=input_uri)
+
+        # mime_type can be application/pdf, image/tiff,
+        # and image/gif, or application/json
+        input_config = documentai2.types.InputConfig(
+            gcs_source=gcs_source, mime_type="application/pdf"
+        )
+
+        # Improve table parsing results by providing bounding boxes
+        # specifying where the box appears in the document (optional)
+        table_bound_hints = [
+            documentai2.types.TableBoundHint(
+                page_number=1,
+                bounding_box=documentai2.types.BoundingPoly(
+                    vertices=[
+                        documentai2.types.geometry.Vertex(x=0, y=0),
+                        documentai2.types.geometry.Vertex(x=0, y=1896),
+                        documentai2.types.geometry.Vertex(x=1896, y=1896),
+                        documentai2.types.geometry.Vertex(x=1896, y=0)
+                        
+                    ],
+                    # Define a polygon around tables to detect
+                    # Each vertice coordinate must be a number between 0 and 1
+                    # normalized_vertices=[
+                    #     # Top left
+                    #     documentai2.types.geometry.NormalizedVertex(x=0, y=0),
+                    #     # Top right
+                    #     documentai2.types.geometry.NormalizedVertex(x=1, y=0),
+                    #     # Bottom right
+                    #     documentai2.types.geometry.NormalizedVertex(x=1, y=1),
+                    #     # Bottom left
+                    #     documentai2.types.geometry.NormalizedVertex(x=0, y=1),
+                    # ]
+                ),
+            )
+        ]
+
+        # Setting enabled=True enables form extraction
+        table_extraction_params = documentai2.types.TableExtractionParams(
+            enabled=True, table_bound_hints=table_bound_hints
+        )
+
+        # Location can be 'us' or 'eu'
+        parent = "projects/{}/locations/us".format(project_id)
+        _request = documentai2.types.ProcessDocumentRequest(
+            parent=parent,
+            input_config=input_config,
+            table_extraction_params=table_extraction_params,
+        )
+
+        document = client.process_document(request=_request)
+        entities = document.entities
+
+        def _get_text(el):
+            """Convert text offset indexes into text snippets."""
+            response = ""
+            # If a text segment spans several lines, it will
+            # be stored in different text segments.
+            for segment in el.text_anchor.text_segments:
+                start_index = segment.start_index
+                end_index = segment.end_index
+                response += document.text[start_index:end_index]
+            return response
+
+        def _get_cell_data(el):
+            response = []
+            for cell in el:
+                response.append(_get_text(cell.layout))
+            return response
+
+        def _get_text_from_sorted_arr_tables(start_index, end_index):
+            """Convert text offset indexes into text snippets."""
+            response = []
+            # If a text segment spans several lines, it will
+            # be stored in different text segments.
+            response.append(document.text[start_index:end_index])
+            return response
+
+        def _get_data_from_page_start_to_table_start(page_layout, table_layout):
+            #arr = []
+            arr_page = []
+            arr_tables = []
+            for segment in page_layout.text_anchor.text_segments:
+                start_index = segment.start_index
+                end_index = segment.end_index
+                if(start_index not in arr_page):
+                    arr_page.append(start_index)
+                if(end_index not in arr_page):
+                    arr_page.append(end_index)
+            #print("Page arguments", arr_page)
+            for segment in table_layout.text_anchor.text_segments:
+                start_index = segment.start_index
+                end_index = segment.end_index
+                arr_tables.append([start_index, end_index])
+            sorted_arr_tables = sorted(arr_tables, key=lambda x: x[1])
+            #print("Table arguments", sorted_arr_tables)
+
+
+
+            resultant_arr = []
+            page_first_table = [arr_page[0], arr_tables[0][0]]
+            page_last_table = [arr_tables[len(arr_tables)-1][1], arr_page[1]]
+            resultant_arr.append(page_first_table)
+            for i in range(1, len(sorted_arr_tables)):
+                resultant_arr.append([sorted_arr_tables[i-1][1], sorted_arr_tables[i][0]])
+                # add start index of page
+            resultant_arr.append(page_last_table)
+            #print("resultant array is : ", resultant_arr)
+
+            #for i in resultant_arr:
+            #print("gettext_resultant",_get_text_from_sorted_arr_tables(i[0], i[1]))
+            
+            return resultant_arr
+        # take all lines above, between and below the table
+        # take{ page_start_index to 1st_table_s_i, 1st_table_end_ind to 2nd_table_start_ind, ..}
+
+        data = []
+        arr_data = []
+        data_except_tables = []
+        #print("document text", document.text)
+        for page in document.pages:
+            #print("Page number: {}".format(page.page_number)) 
+            #print("Bounding box: {}".format(page.bounding_box)) 
+            # if page_number==2
+            #print("page", page)
+            #print("table*********", page.tables)
+            if page.page_number==2:
+                #lines = (_get_text(page.layout))
+                temp = {"pageNumber":page.page_number, "data":[]}
+                #print("Page ", page.page_number, " : " , page.tables)
+                for table_num, table in enumerate(page.tables):
+                    arr_data = _get_data_from_page_start_to_table_start(page.layout,table.layout )
+                    #print("Table {}: ".format(table))
+                    #print("page", page.layout.text_anchor.text_segments)
+                    #print("table", table.layout.text_anchor.text_segments)
+                    temp2= {"tableNumber":table_num, "header":[], "body":[]}
+                    
+                    header_list = []
+                    for row_num, row in enumerate(table.header_rows):
+                        for cell in row.cells:
+                            temp2["header"].append(_get_text(cell.layout))
+                        #     header_list.append(_get_text(cell.layout))
+                        # obj = {}
+                        # for item in header_list:
+                        #     print("item", item)
+                        #     obj["title"] = item
+                        #     obj["key"] = item.lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()
+                        #     temp2["header"].append(json.dumps(obj))
+                        #print(row_num , " " , header_list)
+                        # obj = {}
+                        # for item in temp2["header"]:
+                        #     obj["title"] = item
+                        #     obj["key"] = item.lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()
+                        #     temp2["header"].append(obj)
+                            #print(item , " ", type(item))
+                            #header_list.append(_get_text(cell.layout))
+                            # header_list_obj = {}
+                            # for item in header_list:
+                            #     header_list_obj["title"] = item
+                            #     header_list_obj["key"] = item.lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()
+                            # temp2["header"].append(header_list_obj)
+                            # print("before")
+                            # print("header" , header_list)
+                        
+                            # print("after")
+                        # obj  ={}
+                        # for i in range(len(header_list)):
+                        #     #obj = {"title":item, "key":item.lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()}
+                        #     obj["title"] = header_list[i]
+                        #     obj["key"] = header_list[i].lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()
+                        #     temp2["header"].append(obj)
+                        #cells = "\t".join([_get_text(cell.layout) for cell in row.cells])
+                        #print("Header Row {}: {}".format(row_num, cells))
+                        #temp["header"].append({"rowNum":row_num, "cellData":_get_cell_data(cells)})
+                    #temp_body_list_obj = []
+                    for row_num, row in enumerate(table.body_rows):
+                        #temp2["body"].append(_get_cell_data(row.cells))
+                        temp_list = _get_cell_data(row.cells)
+                        body_list_obj = {}
+                        for i in range(len(temp2)):
+                            body_list_obj[temp2["header"][i]] = temp_list[i]
+
+                        temp2["body"].append(body_list_obj)
+                    #print("body", temp2["body"])
+                        # cells = "\t".join([_get_text(cell.layout) for cell in row.cells])
+                        # print("Row {}: {}".format(row_num, cells))
+                        # temp["body"].append({"rowNum":row_num, "cellData":_get_cell_data(cells)})
+                    temp["data"].append(temp2)
+                    for i in arr_data:
+                        data_except_tables.append(_get_text_from_sorted_arr_tables(i[0], i[1]))
+                data.append(temp)
+                # t = []
+                # for entity in entities:
+                #     entity_type = entity.type_
+                #     value = entity.mention_text
+                #     confience = round(entity.confidence,4)
+                #     t.append({"entityType":entity_type,"entityValue": value,"entityConfidence": confience
+                #     })
+
+
+        # Grab each key/value pair and their corresponding confidence scores.
+
+        
+        #print(lines)
+                
+        return jsonify({"data":data, "dataExceptFromTable":data_except_tables, "dataExceptFromTableArray":arr_data, "pageStartEndIndex":[arr_data[0][0], arr_data[len(arr_data)-1][1]]})
+    except Exception as e:
+        print("ParseTable2 Exception error : ", e)
+        return jsonify({"resutl":"error"})
+
+
+
 @app.route('/parser-type-two', methods=['POST'])
 @cross_origin()
 def parser_type_two(
@@ -672,8 +898,14 @@ def parser_type_two(
                     for row_num, row in enumerate(table.header_rows):
                         for cell in row.cells:
                             temp2["header"].append(_get_text(cell.layout))
-                            header_list.append(_get_text(cell.layout))
-                        print(row_num , " " , header_list)
+                        #     header_list.append(_get_text(cell.layout))
+                        # obj = {}
+                        # for item in header_list:
+                        #     print("item", item)
+                        #     obj["title"] = item
+                        #     obj["key"] = item.lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()
+                        #     temp2["header"].append(json.dumps(obj))
+                        #print(row_num , " " , header_list)
                         # obj = {}
                         # for item in temp2["header"]:
                         #     obj["title"] = item
@@ -730,10 +962,8 @@ def parser_type_two(
         
         #print(lines)
                 
-        return jsonify({"data":data, "dataExceptFromTable":data_except_tables, "dataExceptFromTableArray":arr_data, "pageStartEndIndex":[arr_data[0][0], arr_data[len(arr_data)-1][1]]})
+        return jsonify(data)
     except Exception as e:
         print("ParseTable2 Exception error : ", e)
         return jsonify({"resutl":"error"})
-
-
 
