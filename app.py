@@ -337,10 +337,11 @@ def parser_type_one(
             return response
 
         data = []
-            
+        #return_data = []
 
         for page in document.pages:
             #print("Page number: {}".format(page.page_number))
+            page_data = {"pageNumber":page.page_number, "data":[]}
             if page.page_number==2:
                 for table_num, table in enumerate(page.tables):
                     temp= {"tableNumber": table_num, "header":[], "body":[]}
@@ -355,7 +356,7 @@ def parser_type_one(
                         header_list = temp_header_list[0]["rowData"].split("\t")
                         #print(header_list)
                         for header_name in header_list:
-                            header_data = {"title":header_name , "key": header_name.lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()}
+                            header_data = {"title":header_name.replace("\n", "").strip() , "key": header_name.lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()}
                         # temp["header"]["rowNumber"] = row_num
                         # # temp["header"]["rowData"] = cells
                         #     temp["header"].append(header_data)
@@ -375,7 +376,7 @@ def parser_type_one(
                             body_list = temp_body_list[i]["rowData"].split("\t")
                             body_list_obj = {}
                             for j in range(len(body_list)):
-                                body_list_obj[temp["header"][j]["key"]] = body_list[j]
+                                body_list_obj[temp["header"][j]["key"]] = body_list[j].replace("\n", "")
                         
                         
                         temp["body"].append(body_list_obj)
@@ -391,12 +392,12 @@ def parser_type_one(
                         #     temp["body"].append(body_data)
 
                         #print(temp["header"]["rowData"][row_num].split("\n"))
-                data.append(temp)
-
+                page_data["data"].append(temp)
+                data.append(page_data)
         return jsonify(data)
     except Exception as e:
         print("Parse-type-one Exception error : ", e)
-        return jsonify({"result":"error"})
+        return jsonify({"result":str(e)})
 
 
 
@@ -739,7 +740,7 @@ def parser_type_two_extended(
         return jsonify({"data":data, "dataExceptFromTable":data_except_tables, "dataExceptFromTableArray":arr_data, "pageStartEndIndex":[arr_data[0][0], arr_data[len(arr_data)-1][1]]})
     except Exception as e:
         print("ParseTable2 Exception error : ", e)
-        return jsonify({"resutl":"error"})
+        return jsonify({"resutl":str(e)})
 
 
 
@@ -873,19 +874,22 @@ def parser_type_two(
         # take all lines above, between and below the table
         # take{ page_start_index to 1st_table_s_i, 1st_table_end_ind to 2nd_table_start_ind, ..}
 
-        data = []
+        #data = []
         arr_data = []
         data_except_tables = []
+        temp_return  = []
         #print("document text", document.text)
         for page in document.pages:
+            temp ={"pageNumber":page.page_number, "data" :[]}
             #print("Page number: {}".format(page.page_number)) 
             #print("Bounding box: {}".format(page.bounding_box)) 
             # if page_number==2
             #print("page", page)
             #print("table*********", page.tables)
+            #temp["pageNumber"] = page.page_number
             if page.page_number==2:
                 #lines = (_get_text(page.layout))
-                temp = {"pageNumber":page.page_number, "data":[]}
+                #temp = {"pageNumber":page.page_number, "data":[]}
                 #print("Page ", page.page_number, " : " , page.tables)
                 for table_num, table in enumerate(page.tables):
                     arr_data = _get_data_from_page_start_to_table_start(page.layout,table.layout )
@@ -893,11 +897,18 @@ def parser_type_two(
                     #print("page", page.layout.text_anchor.text_segments)
                     #print("table", table.layout.text_anchor.text_segments)
                     temp2= {"tableNumber":table_num, "header":[], "body":[]}
-                    
+                    #temp[page.page_number] = {}
                     header_list = []
                     for row_num, row in enumerate(table.header_rows):
                         for cell in row.cells:
-                            temp2["header"].append(_get_text(cell.layout))
+                            #temp2["header"].append(_get_text(cell.layout))
+                            header_list.append(_get_text(cell.layout))
+                        #obj = {}
+                        for i in range(len(header_list)):
+                            header_list[i] = header_list[i].replace("\n", "").strip()
+                            title = header_list[i]
+                            key = header_list[i].lower().replace(" ", "").replace("\n", "").replace("($)", "").strip()
+                            temp2["header"].append({"title":title, "key":key})
                         #     header_list.append(_get_text(cell.layout))
                         # obj = {}
                         # for item in header_list:
@@ -937,7 +948,7 @@ def parser_type_two(
                         temp_list = _get_cell_data(row.cells)
                         body_list_obj = {}
                         for i in range(len(temp2)):
-                            body_list_obj[temp2["header"][i]] = temp_list[i]
+                            body_list_obj[temp2["header"][i]["key"]] = temp_list[i].replace("\n","")
 
                         temp2["body"].append(body_list_obj)
                     #print("body", temp2["body"])
@@ -945,9 +956,11 @@ def parser_type_two(
                         # print("Row {}: {}".format(row_num, cells))
                         # temp["body"].append({"rowNum":row_num, "cellData":_get_cell_data(cells)})
                     temp["data"].append(temp2)
+                    #print(temp)
                     for i in arr_data:
                         data_except_tables.append(_get_text_from_sorted_arr_tables(i[0], i[1]))
-                data.append(temp)
+                temp_return.append(temp)
+                #temp["data"].append(temp2)
                 # t = []
                 # for entity in entities:
                 #     entity_type = entity.type_
@@ -962,8 +975,9 @@ def parser_type_two(
         
         #print(lines)
                 
-        return jsonify(data)
+        #return jsonify(data)
+        return jsonify(temp_return)
     except Exception as e:
         print("ParseTable2 Exception error : ", e)
-        return jsonify({"resutl":"error"})
+        return jsonify({"Error : ":str(e)})
 
