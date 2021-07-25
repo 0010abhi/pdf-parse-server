@@ -1,4 +1,5 @@
 pdf-server
 venv
 __pycache__
-warm-abacus-319311-0dbe727044df.json
+gcp.json
+lib
